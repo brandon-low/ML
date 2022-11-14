@@ -33,12 +33,14 @@ print(synaptic_weights)
 
 # test with 1, then put it to a bigger range 20000 result same as tutorial.
 # then try 50000, as the iteration goes to infinity. results approoach 1.
-
+# HERE IS GRADIENT DESCENT LOOP
 for iteration in range(50000):
     input_layer = training_inputs
+    
+    # Activation function. simple with no bias
     outputs = sigmoid(np.dot(input_layer, synaptic_weights))
 
-    #calculate error and adjustments for backpropagation
+    #calculate error and adjustments for back propagation
     error = training_outputs - outputs
     adjustments = error * sigmoid_deriv(outputs)
     synaptic_weights += np.dot(input_layer.T, adjustments)

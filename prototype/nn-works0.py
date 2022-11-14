@@ -136,9 +136,9 @@ HEIGHT = 28     # X_train.shape[2]
 print("X_Train Width:", WIDTH, " Height:", HEIGHT)
 
 ## data file play
-curr_dir = os.getcwd()
-filename = curr_dir + '/train.csv'
-data = pd.read_csv(filename)
+
+#data = pd.read_csv('./train.csv')
+data = pd.read_csv('./train.csv.zip',compression='zip')
 #print("Data head:")
 #print(data.head())
 #print("Data Shape :" , data.shape)
