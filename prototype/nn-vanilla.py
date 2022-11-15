@@ -1,5 +1,6 @@
 
 import numpy as np
+from keras.engine import input_layer
 
 print("Hello Perceptron Vanilla Prototype")
 
@@ -40,11 +41,17 @@ for iteration in range(50000):
     # Activation function. simple with no bias
     outputs = sigmoid(np.dot(input_layer, synaptic_weights))
 
-    #calculate error and adjustments for back propagation
+     #calculate error and adjustments for back propagation
     error = training_outputs - outputs
     adjustments = error * sigmoid_deriv(outputs)
     synaptic_weights += np.dot(input_layer.T, adjustments)
-
+    if (iteration == 1):
+        print("inputshape:", training_outputs.shape, ":", outputs.shape)
+        print("error:", error.shape)
+        print("adjust shape:", input_layer.shape, ":", adjustments.shape)
+        print("to shape:", input_layer.T.shape, ":", adjustments.shape)
+        print("shape:", np.dot(input_layer.T, adjustments).shape)
+  
 print("Synatic weights after training")
 print(synaptic_weights)
 print("Output after training:")
