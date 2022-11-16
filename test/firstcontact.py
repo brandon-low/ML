@@ -10,7 +10,23 @@ def activation(x: np.ndarray) -> np.ndarray:
 def activation_deriv(x: np.ndarray) -> np.ndarray:
     # return activation(x)*(1 - activation(x))
     return 1 - np.power(activation(x), 2)
+  
+def forward(x: np.ndarray, n_layer: int):
+    z = []
+    a = []
+    z.append(x)
+    a.append(x)
+    print("**** FORWARD FEED  return the last activation which is the result ******")
+    for i in range(n_layer - 1):
+        z.append(w[i].dot(a[i]) + b[i])
+        #print("z[-1]:", z[-1].shape , "i:", i, "z[",(i+1),"]", z[i+1].shape, "z[",i,"]", z[i].shape)
+        a.append(activation(z[i+1]))
+        print("ForwardFeed i:", i, "z[-1]:", z[-1].shape, "a[-1]:", a[-1].shape)
     
+    print("return at forward a[-1]:", a[-1].shape)
+    return z, a, a[-1]
+
+     
 print("Tear Down NN")
 
 """
@@ -20,7 +36,7 @@ print("Tear Down NN")
    num_layers: the number of hidden layers
 """
 
-nn_cfg = [784, 30, 20, 10]
+nn_cfg = [784, 100, 30, 20, 10]
 
 nn_cfg_n_layers = len(nn_cfg)
 w = []
