@@ -1,4 +1,3 @@
-
 import numpy as np
 from keras.engine import input_layer
 

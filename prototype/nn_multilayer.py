@@ -2,10 +2,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# tanh activation function
 def tanh(x: np.ndarray) -> np.ndarray:
+    # return (np.exp(z) - np.exp(-z)) / (np.exp(z) + np.exp(-z))
     return np.tanh(x)
 
+# Derivative of Tanh Activation Function
 def derivative_tanh(x: np.ndarray) -> np.ndarray:
+    #return 1 - np.power(tanh(z), 2)
     return 1 - np.power(activation(x), 2)
 
 def sigmoid(x):
@@ -15,13 +19,25 @@ def sigmoid(x):
 def derivative_sigmoid(x):
     #activation(x)*(1 - activation(x))
     return x*(1-x)
+
+# Leaky_ReLU activation function
+def leakyrelu(z, alpha):
+    #return max(alpha * z, z)
+    return np.max(alpha*z, z)
     
+# Derivative of leaky_ReLU Activation Function
+def dericative_leakyrelu(z, alpha):
+    return 1 if z > 0 else alpha   
+
 def ReLU(Z):
+    # return max(0, z)
     return np.maximum(Z,0)
 
 def derivative_ReLU(Z):
+    #return 1 if z > 0 else 0
     return Z > 0
 
+#Use for last layer
 def softmax(Z):
     """Compute softmax values for each sets of scores in x."""
     exp = np.exp(Z - np.max(Z)) #le np.max(Z) evite un overflow en diminuant le contenu de exp
@@ -50,20 +66,16 @@ def one_hot(Y):
     return one_hot_Y
 
 def init_params(cfg, n_layers: int):
-    
-    w = []
-    b = []
+    weights = []
+    biases = []
+    np.random.seed(1)
     for i in range(n_layers -1):
         #print(nn_cfg[i+1] ,":", nn_cfg[i])
         #w.append(np.random.randn( cfg[i+1], cfg[i])) # dont use this 
-        #w.append( np.random.rand( cfg[i+1], cfg[i])-0.5  )
-        
+         
         ## this is still the best
-        w.append(np.random.normal(size=(cfg[i+1], cfg[i])) * np.sqrt(1./(cfg[i])) )
-        
-       
-        #p.random.rand(10,size) - 0.5
-        b.append(np.zeros((cfg[i+1], 1)))
+        weights.append(np.random.normal(size=(cfg[i+1], cfg[i])) * np.sqrt(1./(cfg[i])) )
+        biases.append(np.zeros((cfg[i+1], 1)))
         
         """
         if (i == 0):
@@ -73,9 +85,9 @@ def init_params(cfg, n_layers: int):
         else:
             print("Hidden Layer:W", w[i].shape)
         """
-    return w, b
+    return weights, biases
     
-def forwardfeed(x: np.ndarray, w, b, n_layer: int):
+def forwardfeed(x: np.ndarray, weights, biases, n_layer: int):
     z = []
     a = []
     z.append(x)
@@ -83,7 +95,7 @@ def forwardfeed(x: np.ndarray, w, b, n_layer: int):
     #print("**** FORWARD FEED  return the last activation which is the result ******")
     for i in range(n_layer - 1):
             
-        z.append(w[i].dot(a[i]) + b[i])
+        z.append(weights[i].dot(a[i]) + biases[i])
         #print("z[-1]:", z[-1].shape , "i:", i, "z[",(i+1),"]", z[i+1].shape, "z[",i,"]", z[i].shape)
         
         if (i == (n_layer-2) ):
@@ -166,16 +178,16 @@ def backward_propagate(w, b, z, a, n_layer, Y):
     
     return deltas, gradw, gradb
 
-def update_params(w, b, gradw, gradb, n_layer, alpha):
+def update_params(weights, biases, gradw, gradb, n_layer, alpha):
     #print("******** UPDATE weights and biases *******")
     for i in range(n_layer -1):
         #print("w[", i, "]", w[i].shape, "gradw:", gradw[i].shape)
-        w[i] -= alpha*gradw[i]
+        weights[i] -= alpha*gradw[i]
         #print("b[", i, "]", b[i].shape, "gradb:", gradb[i].shape, "gradb:", gradb[i] )
         #b2 -= alpha * np.reshape(db2, (10,1))
-        b[i] -= alpha*gradb[i]
+        biases[i] -= alpha*gradb[i]
     #print("******** FINISH Update weight biases*****")
-    return w, b
+    return weights, biases
     
     
 def read_test_data_csv():
@@ -270,7 +282,7 @@ X, Y = read_test_data_csv()
 #z,a, _ = forwardfeed(X, w, b, n_layer)
 #deltas, gradw, gradb = backward_propagate(w, b, z, a, n_layer, Y)
 #w, b = update_params(w, b, gradw, gradb, n_layer, alpha)
-np.random.seed(1)
+
 print("Start gradient descent")
 w, b = gradient_descent(cfg, n_layer, X, Y, alpha, 1000)
 print("gradient descent END")
