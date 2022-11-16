@@ -136,7 +136,7 @@ def backward_propagate(weights, biases, zetas, acts, Y):
     
     #gradw.append(np.dot(a[-2].T, deltas[-1])) # wrong size
     gradw.append(mm * deltas[-1].dot(acts[-2].T) ) # delta[out neurons, m]
-    gradb.append(mm * np.sum(deltas[-1])) # 1/mX sum(deltas)
+    gradb.append(mm * np.sum(deltas[-1], 1)) # 1/mX sum(deltas)
 
     #gradb.append(np.sum(deltas[-1], axis=0, keepdims=True))
     #print("Start Loop Range deltas:" , len(deltas), " w:", len(w), "z:", len(z))
@@ -169,7 +169,7 @@ def backward_propagate(weights, biases, zetas, acts, Y):
     
         #gradb.append(np.sum(deltas[-1], axis=0, keepdims=True)) # this is good
         #print("deltas to work out gradb: m:", deltas[-1].shape[1])
-        gradb.append( mm * np.sum(deltas[-1])) # mm is correct - 1/mX sum(deltas)
+        gradb.append( mm * np.sum(deltas[-1], 1)) # mm is correct - 1/mX sum(deltas)
         
     gradw.reverse()
     gradb.reverse()
@@ -187,13 +187,13 @@ def update_params(weights, biases, gradw, gradb, alpha):
         weights[i] -= alpha*gradw[i]
         #print("b[", i, "]", b[i].shape, "gradb:", gradb[i].shape, "gradb:", gradb[i] )
         #b2 -= alpha * np.reshape(db2, (10,1))
-        biases[i] -= alpha*gradb[i]
+        biases[i] -= alpha* np.reshape( gradb[i], (biases[i].shape[0], 1)) 
     #print("******** FINISH Update weight biases*****")
     """
     ### same code as above
     for w, b, dW, dB in zip(weights, biases, gradw, gradb):
         w -= alpha*dW
-        b -= alpha*dB
+        b -= alpha* np.reshape( dB, (b.shape[0], 1))
         
     return weights, biases
     
