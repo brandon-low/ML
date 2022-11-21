@@ -4,8 +4,22 @@ import pickle
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
+debug = False
 
-debug = True
+def generate_data(n: int) -> np.ndarray:
+    return generate_sinwave_data(2, n)
+
+def generate_sinwave_data(n: int, s: int) -> np.ndarray:
+    x = np.linspace(0, 1, s)
+    x = x.reshape(len(x), 1)
+    y = np.sin(n * np.pi * x)
+    return x, y
+
+def generate_tanhwave_data(n: int) -> np.ndarray:
+    x = np.linspace(-np.pi, np.pi, n)
+    x = x.reshape(len(x), 1)
+    y = np.tanh( x)
+    return x, y
 
 def read_data_from_zip():
     print("Neural Net Work from train.csv.zip")
@@ -61,9 +75,9 @@ def tanh(x: np.ndarray) -> np.ndarray:
     return np.tanh(x)
 
 # Derivative of Tanh Activation Function
-def derivative_tanh(x: np.ndarray) -> np.ndarray:
+def tanh_derv(x: np.ndarray) -> np.ndarray:
     #return 1 - np.power(tanh(z), 2)
-    return 1 - np.power(activation(x), 2)
+    return 1 - np.power(tanh(x), 2)
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -149,14 +163,104 @@ class NeuralNetwork:
             else:
                 print("W:", self.w[i].shape, "B:", self.b[i].shape, "Hidden Layer")
             
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forwardTanh(self, x: np.ndarray) -> np.ndarray:
         self.z = []
         self.a = []
         self.z.append(x)
         self.a.append(x)
         
         if (debug): print("z[0]:", self.z[-1].shape, "a[0]:", self.a[-1].shape)
-             
+      
+        num_layers =len(self.w)
+    
+        #print("**** FORWARD FEED  return the last activation which is the result ******")
+        for i in range(num_layers):
+            self.z.append(self.w[i].dot(self.a[i]) + self.b[i])
+            #print("z[-1]:", z[-1].shape , "i:", i, "z[",(i+1),"]", z[i+1].shape, "z[",i,"]", z[i].shape)
+            self.a.append(tanh(self.z[-1]))
+            
+            if (debug): print("z[", i, "]:", self.z[-1].shape, "a[", i, "]:", self.a[-1].shape)
+        
+        #print("ForwardFeed i:", i, "z[-1]:", z[-1].shape, "a[-1]:", a[-1].shape)
+        #print("return at forward a[-1]:", a[-1].shape)
+        #print("**** FORWARD FEED FINISH******")
+        return self.a[-1]
+     
+    def backwardTanh(self, x: np.ndarray, y: np.ndarray) -> None:
+        self.gradw = []
+        self.gradb = []
+        self.deltas = []
+        
+        self.deltas.append( (self.a[-1] - y.T))
+        total_m = self.deltas[-1].shape[1]
+        #print("0 deltas to work out gradw & gradb: m:", total_m)
+        one_div_m = 1/total_m      ## same number for all
+        
+        #print("a[-1]:", self.a[-1].shape, "y:", y.shape , "self.a[-1] - y:", (self.a[-1] - y.T).shape )
+        #print("y:", y)
+        #print("a[-1]-y:", (self.a[-1] - y) )
+        #print("gradw [0]: deltas[-1]", self.deltas[-1].shape ," a[-2]:", self.a[-2].T.shape)
+        #print("gradw [0]: deltas[-1]:", self.deltas[-1], "a[-2]:", self.a[-2].T )
+        #print("gradw [0]:", np.dot( self.deltas[-1], self.a[-2].T).shape )
+        
+       
+        self.gradw.append( np.dot( self.deltas[-1], self.a[-2].T))
+        #print("gradb [0]:", self.deltas[-1].shape , "==>" , np.sum(self.deltas[-1],1).shape, "=", np.sum(self.deltas[-1],1) )
+        self.gradb.append( np.sum(self.deltas[-1], 1))
+        #self.gradb.append(np.sum(self.deltas[-1], axis=0, keepdims=True))
+        #print("gradw [0]:" , self.gradw[-1], "gradb[0]:", self.gradb[-1])
+        #if (debug): print("deltas[0]:", self.deltas[-1].shape  , "gradw[0]:", self.gradw[-1].shape, "gradb[0]:", self.gradb[-1].shape)
+      
+        num_layers = len(self.w)
+        for i in range(num_layers, 1, -1):     # loop is right 
+            #print("[", i, "] w:", self.w[i-1].T.shape , "deltas[-1]:", self.deltas[-1].shape, )
+            self.deltas.append(np.dot(self.w[i-1].T, self.deltas[-1]) * tanh_derv(self.z[i-1]))
+                
+            #self.deltas.append( self.w[i-1].T.dot(self.deltas[-1]) * self.tanh_deriv(self.z[i-1]))
+    
+            self.gradw.append( np.dot( self.deltas[-1], self.a[i-2].T))
+            self.gradb.append( np.sum(self.deltas[-1], 1))
+            #print("[", i, "] deltas:", self.deltas[-1].shape, "gradw:", self.gradw[-1].shape, "gradb:", self.gradb[-1].shape, "=", self.gradb[-1])
+            #if (debug): print("deltas[", i,"]:", self.deltas[-1].shape  , "gradw[", i, "]:", self.gradw[-1].shape, "gradb[", i, "]:", self.gradb[-1].shape)
+       
+        self.gradw.reverse()
+        self.gradb.reverse()
+        self.deltas.reverse()
+        if (debug):
+            for dd, dW, dB in zip(self.deltas, self.gradw, self.gradb):
+                print("Deltas:", dd.shape  , "gradw:", dW.shape, "gradb:", dB.shape)
+    
+    def updateTanh(self, lr: float) -> None:
+        for i in range( len(self.w) ):
+            self.w[i] -= lr*self.gradw[i]
+            #self.b[i] -= lr*self.gradb[i]
+            self.b[i] -= lr*np.reshape(self.gradb[i],(self.b[i].shape[0], 1)) 
+            #lr* np.reshape( dB, (b.shape[0], 1))
+            #self.b[i] -= lr* np.reshape( self.gradb[i], (self.b[i].shape[0], 1))
+     
+    def predictTanh(self, x: np.ndarray) -> np.ndarray:
+        return self.forwardTanh(x)
+
+    def mse(self, x: np.ndarray, y: np.ndarray) -> float:
+        return np.mean(np.power(self.predictTanh(x) - y, 2))
+    
+    def train(self, x: np.ndarray, y: np.ndarray, lr: float, epochs: int) -> None:
+        for i in range(epochs):
+            A2 = self.forwardTanh(x)
+            #print("A2:", A2)
+            self.backwardTanh(x, y)
+            self.updateTanh(lr)
+            # if (self.mse(x, y) < 0.1):
+                # break
+            if i % 100 == 0:
+                print(f'Epoch {i}: {self.mse(x, y):.3%}')
+                
+    
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        self.z = []
+        self.a = []
+        self.z.append(x)
+        self.a.append(x)
         num_layers =len(self.w)
     
         #print("**** FORWARD FEED  return the last activation which is the result ******")
@@ -169,9 +273,6 @@ class NeuralNetwork:
                 self.a.append(softmax(self.z[i+1]))
             else:
                 self.a.append(activation(self.z[i+1]))
-       
-            if (debug): print("z[", i, "]:", self.z[-1].shape, "a[", i, "]:", self.a[-1].shape)
-       
         
         #print("ForwardFeed i:", i, "z[-1]:", z[-1].shape, "a[-1]:", a[-1].shape)
         #print("return at forward a[-1]:", a[-1].shape)
@@ -197,8 +298,6 @@ class NeuralNetwork:
         self.gradw.append(one_div_m * self.deltas[-1].dot(self.a[-2].T) ) # delta[out neurons, m]
         self.gradb.append(one_div_m * np.sum(self.deltas[-1], 1)) # 1/mX sum(deltas)
         
-        #if (debug): print("deltas[0]:", self.deltas[-1].shape  , "gradw[0]:", self.gradw[-1].shape, "gradb[0]:", self.gradb[-1].shape)
-       
         #print("***** BUILD Rest Of Deltas , gradw, gradb ******")
         #for i in range(nn_cfg_n_layers - 1, 0, -1):     # loop is wrong should stop at 1
         num_layers = len(self.w)
@@ -225,8 +324,6 @@ class NeuralNetwork:
             #print("deltas to work out gradb: m:", deltas[-1].shape[1])
             self.gradb.append( one_div_m * np.sum(self.deltas[-1], 1)) # mm is correct - 1/mX sum(deltas)
         
-            #if (debug): print("deltas[", i,"]:", self.deltas[-1].shape  , "gradw[", i, "]:", self.gradw[-1].shape, "gradb[", i, "]:", self.gradb[-1].shape)
-       
         """
         self.deltas.append(self.a[-1] - y)
         self.gradw.append(np.dot(self.a[-2].T, self.deltas[-1]))
@@ -241,15 +338,11 @@ class NeuralNetwork:
         self.gradw.reverse()
         self.gradb.reverse()
         self.deltas.reverse()
-        if (debug):
-            for dd, dW, dB in zip(self.deltas, self.gradw, self.gradb):
-                print("Deltas:", dd.shape  , "gradw:", dW.shape, "gradb:", dB.shape)
-       
         
     def update(self, lr: float) -> None:
         for w, b, dW, dB in zip(self.w, self.b, self.gradw, self.gradb):
-            w -= alpha*dW
-            b -= alpha* np.reshape( dB, (b.shape[0], 1))
+            w -= lr*dW
+            b -= lr* np.reshape( dB, (b.shape[0], 1))
             
     def predict(self, x: np.ndarray) -> np.ndarray:
         return self.forward(x)
@@ -298,6 +391,30 @@ class NeuralNetwork:
 
 ##########MAIN ###########
 
+
+x, y = generate_sinwave_data(2, 100)
+#x, y = generate_tanhwave_data(100)
+
+nn = NeuralNetwork([1, 50, 50, 40, 1])
+x=x.T
+print("Start Training: x:", x.shape, "y:", y.shape )
+nn.train(x, y,  0.0011, 2000)
+print("End Training!")
+
+y_pred = nn.predictTanh(x)
+
+
+#plt.plot(x[0], y, color ='tab:pink')
+plt.scatter(x, y, c="pink",linewidths = 0.3)
+#plt.scatter(x, y_pred, c ='blue') 
+plt.plot(x[0], y_pred[0], color ='tab:blue') 
+
+
+plt.show()
+
+"""
+
+
 cfg = [784, 10, 10, 10]
 alpha = 0.15
 
@@ -312,23 +429,23 @@ X_train, Y_train, X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR = read_data_from_z
 neuralNetwork = NeuralNetwork(cfg)
 
 print("Start gradient descent: x:", X_train.shape, "y:", Y_train.shape )
-neuralNetwork.gradient_descent( X_train, Y_train, alpha, 1)
+neuralNetwork.gradient_descent( X_train, Y_train, alpha, 200)
 print("gradient descent END")
 
-""""
-with open("trained_params.pkl","wb") as dump_file:
-    pickle.dump((weights, biases),dump_file)
 
-with open("trained_params.pkl","rb") as dump_file:
-    weights, biases = pickle.load(dump_file)
+#with open("trained_params.pkl","wb") as dump_file:
+#    pickle.dump((weights, biases),dump_file)
+
+#with open("trained_params.pkl","rb") as dump_file:
+#    weights, biases = pickle.load(dump_file)
+
+
+neuralNetwork.show_prediction(0,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
+neuralNetwork.show_prediction(1,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
+neuralNetwork.show_prediction(2,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
+neuralNetwork.show_prediction(100,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
+neuralNetwork.show_prediction(200,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
 """
-
-#neuralNetwork.show_prediction(0,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
-#neuralNetwork.show_prediction(1,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
-#neuralNetwork.show_prediction(2,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
-#neuralNetwork.show_prediction(100,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
-#neuralNetwork.show_prediction(200,X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR)
-
 
 
 

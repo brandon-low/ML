@@ -197,6 +197,7 @@ neuralNetwork.gradient_descent(x, y, 0.0001, 10000)
 
 
 y_pred = [np.mean(a) for a in neuralNetwork.predict(x)]
+print("y_pred:", y_pred);
 plt.scatter(x, y, c="pink",linewidths = 0.3)
 plt.plot(x, y_pred)
 plt.show()
