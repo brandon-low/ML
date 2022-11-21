@@ -64,15 +64,8 @@ def activation_deriv(x: np.ndarray) -> np.ndarray:
 
 def one_hot(Y):
     ''' return an 0 vector with 1 only in the position correspondind to the value in Y'''
-    #print("One Hot Y:", Y.shape, "y.max():", Y.max(), "y.Size:", Y.size)
-    #print("one hot Y:", Y)
-    #one_hot_Y = np.zeros((Y.max()+1,Y.size)) #si le chiffre le plus grand dans Y est 9 ca fait 10 lignes
-    one_hot_Y = np.zeros((Y.max()+1,Y.size))
-    #print("one hot hotY:", one_hot_Y, " transposed:", one_hot_Y.T, " arrangeY:", np.arange(Y.size))
-        
+    one_hot_Y = np.zeros((Y.max()+1,Y.size)) #si le chiffre le plus grand dans Y est 9 ca fait 10 lignes
     one_hot_Y[Y,np.arange(Y.size)] = 1 # met un 1 en ligne Y[i] et en colonne i, change l'ordre mais pas le nombre
-    #print("one hot hotY:", one_hot_Y, " transposed:", one_hot_Y.T, " arrangeY:", np.arange(Y.size))
-      
     return one_hot_Y
 
 def init_params(cfg):
@@ -108,10 +101,9 @@ def forwardfeed(x: np.ndarray, weights, biases):
     nWeights=len(weights)
     
     #print("**** FORWARD FEED  return the last activation which is the result ******")
-    for i in range(nWeights):
+    for i in range( len(weights) ):
         zetas.append(weights[i].dot(acts[i]) + biases[i])
         #print("z[-1]:", z[-1].shape , "i:", i, "z[",(i+1),"]", z[i+1].shape, "z[",i,"]", z[i].shape)
-        
         if (i == (nWeights-1) ):
             #print("Forward Output Layer W:", w[i].shape)
             acts.append(softmax(zetas[i+1]))
@@ -132,9 +124,6 @@ def backward_propagate(weights, biases, zetas, acts, Y):
     
     #print("delta:", a[-1].shape, "-", Y_train.shape , "=", (a[-1] - Y_train).shape )
     one_hot_Y = one_hot(Y)
-    print("a[-1]:", acts[-1].shape, "onehotY:", one_hot_Y.shape);
-    print("a[-1]:", acts[-1], "onehotY:", one_hot_Y , "==>", 2*(acts[-1] - one_hot_Y));
-       
     deltas.append( 2 * (acts[-1] - one_hot_Y))    #dZ2 = 2*(A2 - one_hot_Y) #10,m
     
     #print("a[-2]:", a[-2].shape, " a[-2].T:", a[-2].T.shape, "deltas[-1]:", deltas[-1].shape)
@@ -144,7 +133,9 @@ def backward_propagate(weights, biases, zetas, acts, Y):
     #print("0 deltas to work out gradw & gradb: m:", total_m)
     mm = 1/total_m      ## same number for all
     
-    #gradw.append(np.dot(a[-2].T, deltas[-1])) # wrong size
+    #dW2 = 1/m * (dZ2.dot(A1.T)) # 10 , 10
+    #db2 = 1/m * np.sum(dZ2,1) # 10, 1
+
     gradw.append(mm * deltas[-1].dot(acts[-2].T) ) # delta[out neurons, m]
     gradb.append(mm * np.sum(deltas[-1], 1)) # 1/mX sum(deltas)
 
@@ -197,10 +188,11 @@ def update_params(weights, biases, gradw, gradb, alpha):
         weights[i] -= alpha*gradw[i]
         #print("b[", i, "]", b[i].shape, "gradb:", gradb[i].shape, "gradb:", gradb[i] )
         #b2 -= alpha * np.reshape(db2, (10,1))
-        biases[i] -= alpha* np.reshape( gradb[i], (biases[i].shape[0], 1)) 
+        biases[i] -= alpha*gradb[i]
     #print("******** FINISH Update weight biases*****")
     """
     ### same code as above
+    #np.reshape(db1, (10,1))
     for w, b, dW, dB in zip(weights, biases, gradw, gradb):
         w -= alpha*dW
         b -= alpha* np.reshape( dB, (b.shape[0], 1))
@@ -209,11 +201,9 @@ def update_params(weights, biases, gradw, gradb, alpha):
     
   
 def get_predictions(A2):
-    print("A2:", A2.shape);
     return np.argmax(A2, 0)
 
 def get_accuracy(predictions, Y):
-    print("pred:", predictions.shape, "y:", Y.shape)
     return np.sum(predictions == Y)/Y.size
   
 def gradient_descent(cfg, X, Y, alpha, iterations):
@@ -301,7 +291,7 @@ def read_data_mnist():
 
 ##########MAIN ###########
 
-cfg = [784, 10, 10, 10]
+cfg = [784, 20 , 15, 10]
 alpha = 0.15
 
 
@@ -313,8 +303,8 @@ X_train, Y_train, X_test, Y_test, WIDTH, HEIGHT, SCALE_FACTOR = read_data_from_z
 #deltas, gradw, gradb = backward_propagate(w, b, z, a, n_layer, Y)
 #w, b = update_params(w, b, gradw, gradb, n_layer, alpha)
 
-print("Start gradient descent: x:", X_train.shape, "y:", Y_train.shape )
-weights, biases = gradient_descent(cfg, X_train, Y_train, alpha, 200)
+print("Start gradient descent")
+weights, biases = gradient_descent(cfg, X_train, Y_train, alpha, 300)
 print("gradient descent END")
 
 """"

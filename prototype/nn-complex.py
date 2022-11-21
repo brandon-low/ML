@@ -15,9 +15,18 @@ import matplotlib.pyplot as plt
 #I Made A Neural Network From Scratch (With Python and Numpy)! Siddhant Dubey
 
 def generate_data(n: int) -> np.ndarray:
-    x = np.linspace(0, 1, n)
+    return generate_sinwave_data(2, n)
+
+def generate_sinwave_data(n: int, s: int) -> np.ndarray:
+    x = np.linspace(0, 1, s)
     x = x.reshape(len(x), 1)
-    y = np.sin(2 * np.pi * x)
+    y = np.sin(n * np.pi * x)
+    return x, y
+
+def generate_tanhwave_data(n: int) -> np.ndarray:
+    x = np.linspace(-np.pi, np.pi, n)
+    x = x.reshape(len(x), 1)
+    y = np.tanh( x)
     return x, y
 
 class NeuralNetwork:
@@ -110,12 +119,14 @@ class NeuralNetwork:
         return self.forward(x)
 
 #make an NeuralNetwork
-x, y = generate_data(100)
+#x, y = generate_data(100)
+#x, y = generate_tanhwave_data(100)
+x, y = generate_sinwave_data(2, 100)
 
 neuralNetwork = NeuralNetwork(1, 3, 1, 3)
 
 # original train is 10000
-neuralNetwork.train(x, y, 0.01, 10000)
+neuralNetwork.train(x, y, 0.01, 50000)
 
 
 y_pred = [np.mean(a) for a in neuralNetwork.predict(x)]
