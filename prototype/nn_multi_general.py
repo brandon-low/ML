@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import pickle
+import json
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 
@@ -127,6 +127,17 @@ def one_hot(Y: np.ndarray) -> np.ndarray:
     #print("one hot hotY:", one_hot_Y, " transposed:", one_hot_Y.T, " arrangeY:", np.arange(Y.size))
       
     return one_hot_Y
+
+#### Loading a Network
+def load(filename: str):
+    f = open(filename, "r")
+    data = json.load(f)
+    f.close()
+   
+    config = data["configure"]
+    weights = [np.array(w) for w in data["weights"]]
+    biases = [np.array(b) for b in data["biases"]]
+    return weights, biases, config
 
 class NeuralNetwork:
     def __init__(self, cfg: []) -> None:
@@ -314,7 +325,19 @@ class NeuralNetwork:
         plt.imshow(current_image, interpolation='nearest')
         plt.show()
 
-
+    def setWeightsBiases(self, w: [], b: [])-> None:
+        self.w = w
+        self.b = b
+           
+    def save(self, filename):
+        """Save the neural network to the file ``filename``."""
+        data = {
+                "configure": self.cfg,
+                "weights": [w.tolist() for w in self.w],
+                "biases": [b.tolist() for b in self.b]}
+        f = open(filename, "w")
+        json.dump(data, f)
+        f.close()
 
 ##########MAIN ###########
 

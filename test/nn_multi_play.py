@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 debug = False
 
+
 def generate_data(n: int) -> np.ndarray:
     return generate_sinwave_data(2, n)
 
@@ -135,9 +136,10 @@ def load(filename: str):
     data = json.load(f)
     f.close()
    
+    config = data["configure"]
     weights = [np.array(w) for w in data["weights"]]
     biases = [np.array(b) for b in data["biases"]]
-    return weights, biases
+    return weights, biases, config
 
 
 class NeuralNetwork:
@@ -223,7 +225,7 @@ class NeuralNetwork:
     def mse(self, x: np.ndarray, y: np.ndarray) -> float:
         return np.mean(np.power(self.predictTanh(x) - y, 2))
     
-    def train(self, x: np.ndarray, y: np.ndarray, lr: float=0.001, epochs: int=1000) -> None:
+    def gradient_descentTanh(self, x: np.ndarray, y: np.ndarray, lr: float=0.001, epochs: int=1000) -> None:
         for i in range(epochs):
             A2 = self.forwardTanh(x)
             #print("A2:", A2)
@@ -241,7 +243,7 @@ class NeuralNetwork:
     def save(self, filename):
         """Save the neural network to the file ``filename``."""
         data = {
-                "cfg:": [self.cfg],
+                "configure": self.cfg,
                 "weights": [w.tolist() for w in self.w],
                 "biases": [b.tolist() for b in self.b]}
         f = open(filename, "w")
@@ -351,7 +353,7 @@ x, y = generate_sinwave_data(2, 100)
 nn = NeuralNetwork([1, 50, 50, 40, 1])
 x=x.T
 print("Start Training: x:", x.shape, "y:", y.shape )
-nn.train(x, y,  0.0011, 2000)
+nn.gradient_descentTanh(x, y,  0.0011, 2000)
 print("End Training!")
 
 y_pred = nn.predictTanh(x)
@@ -364,10 +366,10 @@ plt.plot(x[0], y_pred[0], color ='tab:blue')
 
 plt.show()
 
-filename = "test_graph.json"
-nn.save(filename)
+#filename = "test_graph.json"
+#nn.save(filename)
 
-w, b= load(filename)
+#w, b= load(filename)
 
 
 
